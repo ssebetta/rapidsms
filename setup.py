@@ -17,7 +17,7 @@ setup(
         "djappsettings"
     ],
 
-    scripts = ["bin/rapidsms-admin.py"],
+    scripts = ["bin/rapidsms-admin.py", "bin/runrouter.py"],
 
     package_dir = {"": "lib"},
     packages = find_packages("lib",exclude=['*.pyc']),
