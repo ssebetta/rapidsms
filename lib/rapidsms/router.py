@@ -88,19 +88,6 @@ class Router(object, LoggerMixin):
 
 
     @staticmethod
-    def _clean_backend_config(config):
-        """
-        Return ``config`` (a dict) with the keys downcased. (This is
-        intended to make the backend configuration case insensitive.)
-        """
-
-        return dict([
-            (key.lower(), val)
-            for key, val in config.iteritems()
-        ])
-
-
-    @staticmethod
     def _wait(func, timeout):
         """
         Keep calling *func* (a lambda function) until it returns True,
