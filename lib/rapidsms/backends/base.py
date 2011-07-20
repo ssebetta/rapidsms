@@ -98,11 +98,11 @@ class BackendBase(object, LoggerMixin):
         return self.router.incoming_message(msg)
 
 
-    # TODO: what on earth is this for?
     def next_message (self): # pragma: no cover
         """
         Returns the next incoming message waiting to be processed, or
-        None if there are none pending.
+        None if there are none pending.  Currently used by gsm, irc, and
+        smpp backends.
         """
 
         try:
