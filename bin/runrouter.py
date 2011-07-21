@@ -54,17 +54,6 @@ class RapidWSGIHandler(WSGIHandler, LoggerMixin):
 class RapidHttpServer(WSGIServer):
     """ WSGIServer that doesn't block on handle_request """
 
-    def run(self):
-        server_address = (self.host, int(self.port))
-        self.info('Starting HTTP server on {0}:{1}'.format(*server_address))
-        self.server = RapidHttpServer(server_address, WSGIRequestHandler)
-        self.server.set_app(self.handler)
-        while self.running:
-            try:
-                self.server.handle_request()
-            except Exception, exc:
-                self.error( traceback.format_exc(exc))
-
     def handle_request(self, timeout=1.0):
         reads, writes, errors = (self, ), (), ()
         reads, writes, errors = select.select(reads, writes, errors, timeout)
@@ -142,44 +131,27 @@ class Router(object, LoggerMixin):
         return False
 
 
-    def _start_web_server(self):
-        """
-        Start the web server, and return True when it terminates. If an
-        exception is raised, wait five seconds and restart it.
-        """
+    def _init_web_server(self):
+        server_address = (self.host, int(self.port))
+        self.info('Starting HTTP server on {0}:{1}'.format(*server_address))
+        self.handler = RapidWSGIHandler()
+        self.handler.backend = self
+        self.server = RapidHttpServer(server_address, WSGIRequestHandler)
+        self.server.set_app(self.handler)
 
-        while True:
-            try:
-                self.debug("starting web server")
-                server_address = (self.host, int(self.port))
-                self.info('Starting HTTP server on {0}:{1}'.format(*server_address))
-                self.handler = RapidWSGIHandler()
-                self.handler.backend = self
-                self.server = RapidHttpServer(server_address, WSGIRequestHandler)
-                self.server.set_app(self.handler)
-                while self.running:
-                    self.server.handle_request()
-                self.debug("web thread terminated normally")
-                return True
-            
-            except Exception, e:
-                self.debug("caught exception in web server: %s" % e)
+        worker = threading.Thread(
+            name="http",
+            target=self._run_web_server,
+        )
+        worker.daemon = True
+        worker.start()
+        self._server = worker
 
-                # this flows sort of backwards. wait for five seconds
-                # (to give the backend a break before retrying), but
-                # abort and return if self.accepting is ever False (ie,
-                # the router is shutting down). this ensures that we
-                # don't delay shutdown, because that causes me to SIG
-                # KILL, which prevents things from stopping cleanly.
-                # also check _starting_backends to see if we're in the startup
-                # state.  if we are, don't exit, because accepting won't be
-                # True until we've finished starting up
-                def should_exit():
-                    return not (self._starting_backends or self.accepting)
-                self.debug('waiting 15 seconds before retrying')
-                if self._wait(should_exit, 15):
-                    self.debug('returning from _start_backend')
-                    return None        
+
+    def _run_web_server(self):
+        while self.running or self._starting_backends:
+            self.server.handle_request()
+
 
     def _start_backend(self, backend):
         """
@@ -264,18 +236,9 @@ class Router(object, LoggerMixin):
         self.info("Starting %s..." % settings.PROJECT_NAME)
         self._starting_backends = True
         self._start_all_backends()
-        
-        # Kick off the web server
-        worker = threading.Thread(
-            name='http',
-            target=self._start_web_server
-            # TODO make it, um, configurable
-            #, args=(host, port, etc etc)
-            )
 
-        worker.daemon = True
-        worker.start()
-        self._server = worker
+#         Kick off the web server
+        self._init_web_server()
         self.running = True
         self.debug("Started")
 
@@ -323,7 +286,6 @@ class Router(object, LoggerMixin):
 
         self.debug("Stopping...")
         self._stop_all_backends()
-        self._server.stop()
         self.info("Stopped")
 
 
