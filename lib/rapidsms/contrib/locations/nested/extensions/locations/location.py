@@ -24,6 +24,7 @@ class NestedLocation(models.Model):
            a non-generic relation to their parents.
     The MetaOverride attribute makes the base Location model concrete.
     """
+    name = models.CharField(max_length=100)
     tree_parent = models.ForeignKey('self', blank=True, null=True, related_name='children')
     type = models.ForeignKey(LocationType, related_name="locations", blank=True, null=True)
 

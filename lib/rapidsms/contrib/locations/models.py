@@ -51,7 +51,6 @@ class Location(models.Model):
 
     __metaclass__ = ExtensibleModelBase
 
-    name = models.CharField(max_length=100)
     point = models.ForeignKey(Point, null=True, blank=True)
 
     parent_type = models.ForeignKey(ContentType, null=True, blank=True)
