@@ -1,11 +1,12 @@
 {% extends "layout-split-2.html" %}
-{% block title %}Goodbye{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Goodbye" %}{% endblock %}
 {% block content %}
 
-<h1>Thanks for visiting RapidSMS!</h1>
+<h1>{% trans "Thanks for visiting RapidSMS!" %}</h1>
 
-<p>Please come again.</p>
+<p>{% trans "Please come again." %}</p>
 
-<a href="{% url rapidsms_login %}">Log in again</a>
+<a href="{% url rapidsms_login %}">{% trans "Log in again" %}</a>
 
 {% endblock %}
